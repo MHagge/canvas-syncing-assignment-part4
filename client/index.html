@@ -2,12 +2,85 @@
 <html lang="en">
 <head>
     <script src="https://npmcdn.com/babel-core@5.8.38/browser.min.js"></script>
-    <script type="text/babel" >
-        "use strict";
+<script src="/socket.io/socket.io.js"></script>
+  <script type="text/babel" >
     
-    </script>
+    ()=> { //IIFE
+    
+      "use strict";   
+      let socket;    
+      let canvas;
+      let ctx;    
+      let sendBufferCanvas;
+      let sendBufferCtx;
+
+    
+    const handleMessage = (data) => { //draws boxs that other peeps drew
+      let image = new Image();
+      
+      image.onload = () => {
+        ctx.save();
+        ctx.globalCompositeOperation = "source-open";
+        ctx.drawImage(image, data.x, data.y, data.width, data.height);
+        ctx.restore();
+      };
+      image.src = data.ImgData;
+    }    
+    
+    const setup = () =>{
+      sendBufferCanvas = document.createElement("canvas");
+      sendBufferCanvas.height = 200;
+      sendBufferCanvas.width = 200;
+      sendBufferCtx = sendBufferCanvas.getContext("2d");
+      
+      const randX = Math.floor(Math.random()*500);
+      const randY = Math.floor(Math.random()*500);
+      
+      
+      ctx.fillRect(randX,randY,200,200)//draw to screen
+      
+      sendBufferCtx.fillRect(0,0,200,200);
+      
+      const data = {
+        x: randX,
+        y: randY,
+        height: 200,
+        width: 200,
+        ImgData: sendBufferCanvas.toDataURL(),//get pixal data from canvas
+      };      
+      socket.emit('draw', data);
+    }
+    
+    //INIT
+    const init = () =>{//oh shit whaddup
+      socket = io.connect();
+      canvas = document.querySelector("#canvas");
+      ctx = canvas.getContext("2d");
+      
+      //CONNECT      
+      socket.on('connect', () => {
+        socket.emit('join');
+        
+        setup();
+
+      });
+      
+      socket.on('updateDraw', (data)=>{
+        handleMessage(data);
+      });
+    };
+    //reach inside and you will find a special friend and a boy
+    window.onload = init;  
+  }();//END IIFE
+  </script>
+  <style>
+    #canvas{
+      background-color: #ffaadd;
+    }
+  </style>
 </head>
 <body>
-
+<canvas id="canvas" height="500" width="500">Please use an HTML 5 browser</canvas>
+<!--<input id="clearButton" type="button" value="clear">-->
 </body>
 </html>
